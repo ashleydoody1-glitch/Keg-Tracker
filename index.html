@@ -394,7 +394,7 @@ class DualKegTracker {
       statusEl.textContent = `Warning: Low (${tap.remaining.toFixed(2)}L left)`;
       statusEl.classList.add('warning');
     } else {
-      statusEl.textContent = 'Ready';
+      statusEl.textContent = 'Now Pouring!';
       statusEl.classList.add('Ready');
     }
   }
