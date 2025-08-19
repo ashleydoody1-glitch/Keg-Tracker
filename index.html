@@ -4,10 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dual Keg Tracker with Supabase</title>
-
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-
 <style>
   :root {
     --amber: #f4a261;
@@ -267,14 +265,12 @@
     .pour-btn { flex: 1 1 100%; }
   }
 </style>
-
 </head>
 <body>
 <header>🍺 Dual Keg Tracker</header>
 <div class="summary" aria-live="polite" aria-atomic="true">
   Total Remaining: <span id="total-remaining">0.00L</span> &nbsp;|&nbsp; Total Consumed: <span id="total-consumed">0.00L</span>
 </div>
-
 <div class="kegs-container">
   <section class="keg-section" id="keg-a" aria-label="Tap A">
     <div class="keg-header">
@@ -300,7 +296,6 @@
     </div>
     <button class="btn-reset" data-keg="a" aria-label="Reset Tap A to full">Reset Tap A</button>
   </section>
-
   <section class="keg-section" id="keg-b" aria-label="Tap B">
     <div class="keg-header">
       <h2>Tap B</h2>
@@ -326,7 +321,6 @@
     <button class="btn-reset" data-keg="b" aria-label="Reset Tap B to full">Reset Tap B</button>
   </section>
 </div>
-
 <!-- Modal -->
 <div id="custom-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
   <h3 id="modal-title">Enter Custom Pour (ml)</h3>
@@ -338,19 +332,15 @@
   </div>
 </div>
 <div class="modal-backdrop"></div>
-
 <script>
-  // Put your Supabase URL and anon API key here:
   const SUPABASE_URL = "https://damprmcwxluzsscwtkpv.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbXBybWN3eGx1enNzY3d0a3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NzE5NjMsImV4cCI6MjA3MTE0Nzk2M30.yZYdIOV0aCsca8-mv0yro3PCI_wnxCKrdzE-p5ckVQo";
-
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
   class DualKegTracker {
     constructor() {
       this.kegCapacity = 23;
       this.lowWarningThreshold = 2;
-      this.taps = {};  // will hold data from Supabase keyed by id
+      this.taps = {};
       this.currentModalTapId = null;
       this.init();
     }
@@ -362,11 +352,9 @@
     bindEvents() {
       document.querySelectorAll('.pour-btn').forEach(btn => btn.addEventListener('click', e => this.handlePourClick(e)));
       document.querySelectorAll('.btn-reset').forEach(btn => btn.addEventListener('click', e => this.handleResetClick(e)));
-      
       document.getElementById('modal-cancel').addEventListener('click', () => this.closeModal());
       document.getElementById('modal-confirm').addEventListener('click', () => this.confirmCustomPour());
       document.querySelector('.modal-backdrop').addEventListener('click', () => this.closeModal());
-      
       const input = document.getElementById('custom-amount');
       input.addEventListener('input', () => this.validateCustomInput());
       input.addEventListener('keypress', e => {
@@ -387,20 +375,16 @@
       this.updateSummary();
     }
     renderTap(tap) {
-      // Find the right section by tap_name
       let kegId = null;
-      if (tap.tap_name.toLowerCase() === 'Tap A') kegId = 'a';
-      else if (tap.tap_name.toLowerCase() === 'Tap B') kegId = 'b';
-      else return; // only supports Tap A and b here
-
+      if (tap.tap_name.toLowerCase() === 'tap a') kegId = 'a';
+      else if (tap.tap_name.toLowerCase() === 'tap b') kegId = 'b';
+      else return;
       document.getElementById(`remaining-${kegId}`).textContent = tap.remaining.toFixed(2);
       document.getElementById(`consumed-${kegId}`).textContent = tap.consumed.toFixed(2);
       const percent = Math.round((tap.remaining / this.kegCapacity) * 100);
       const progBar = document.getElementById(`progress-bar-${kegId}`);
       if (progBar) progBar.style.setProperty('--progress', percent + '%');
       document.getElementById(`progress-text-${kegId}`).textContent = percent + '%';
-
-      // Status
       const statusEl = document.getElementById(`status-${kegId}`);
       statusEl.classList.remove('ready', 'warning', 'error');
       if (tap.remaining <= 0) {
@@ -423,21 +407,16 @@
     async handlePourClick(e) {
       const kegId = e.target.dataset.keg;
       const amountStr = e.target.dataset.amount;
-      let tapName = kegId === 'a' ? 'Tap A' : 'Tap B';
-      const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName.toLowerCase());
+      let tapName = kegId === 'a' ? 'tap a' : 'tap b';
+      const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName);
       if (!tap) return alert(`No data found for ${tapName}`);
-
-      if (amountStr === 'other') {
-        this.openModal(tap.id);
-      } else {
-        const amount = parseInt(amountStr);
-        await this.pourTap(tap.id, amount);
-      }
+      if (amountStr === 'other') this.openModal(tap.id);
+      else await this.pourTap(tap.id, parseInt(amountStr));
     }
     async handleResetClick(e) {
       const kegId = e.target.dataset.keg;
-      const tapName = kegId === 'a' ? 'Tap A' : 'Tap B';
-      const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName.toLowerCase());
+      const tapName = kegId === 'a' ? 'tap a' : 'tap b';
+      const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName);
       if (!tap) return alert(`No data found for ${tapName}`);
       await this.resetTap(tap.id);
     }
@@ -523,7 +502,6 @@
         .subscribe();
     }
   }
-
   document.addEventListener('DOMContentLoaded', () => {
     window.dualKegTracker = new DualKegTracker();
   });
