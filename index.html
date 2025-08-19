@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🍺 Dual Keg Tracker Fixed Reload</title>
+<style>
+  :root {
+    --amber: #f4a261;
+    --gold: #e9c46a;
+    --brown-dark: #6a4c3b;
+    --brown-light: #dccaaf;
+    --red-warm: #d9534f;
+    --orange-warm: #f08a5d;
+    --background: #f7ede2;
+    --surface: #fff5e1;
+    --text-dark: #402218;
+    --text-light: #563c1f;
+  }
+
+  body {
+    margin: 0; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background);
+    color: var(--text-dark);
+  }
+
+  header {
+    background: var(--amber);
+    padding: 1rem 0;
+    text-align: center;
+    color: var(--brown-dark);
+    font-weight: 700;
+    font-size: 1.8rem;
+    user-select: none;
+  }
+
+  .summary {
+    margin: 1rem 0;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--brown-dark);
+  }
+
+  .kegs-container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 2rem;
+    padding: 0 1rem 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .keg-section {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.08);
+    padding: 1.2rem 1.5rem;
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  .keg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .keg-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: var(--brown-dark);
+  }
+
+  .keg-status {
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .keg-status.ready {
+    background-color: var(--gold);
+    color: var(--brown-dark);
+  }
+
+  .keg-status.warning {
+    background-color: var(--orange-warm);
+    color: white;
+  }
+
+  .keg-status.error {
+    background-color: var(--red-warm);
+    color: white;
+  }
+
+  .keg-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.3rem;
+  }
+
+  .remaining-display {
+    flex-grow: 1;
+  }
+
+  .remaining-amount {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--brown-dark);
+  }
+
+  .remaining-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--brown-light);
+  }
+
+  .progress-container {
+    flex-basis: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .progress-bar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--amber) 0% var(--progress),
+      var(--brown-light) var(--progress) 100%
+    );
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 70px; height: 70px;
+    background: var(--surface);
+    border-radius: 50%;
+    z-index: 0;
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--brown-dark);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .consumed-display {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--brown-dark);
+    font-size: 1.1rem;
+  }
+
+  .consumed-label {
+    font-weight: 700;
+    margin-right: 0.25rem;
+  }
+
+  /* Buttons */
+
+  .pour-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    justify-content: center;
+  }
+
+  .pour-btn {
+    padding: 0.65rem 1.2rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 1rem;
+    flex: 1 1 48%;
+    transition: transform 0.15s ease;
+    user-select: none;
+  }
+
+  .pour-btn:hover {
+    transform: scale(1.1);
+  }
+
+  /* Different colors for each size */
+  .pour-btn[data-amount="330"] {
+    background-color: #dd6b20;
+  }
+  .pour-btn[data-amount="425"] {
+    background-color: #d97706;
+  }
+  .pour-btn[data-amount="500"] {
+    background-color: #b45309;
+  }
+  .pour-btn[data-amount="570"] {
+    background-color: #92400e;
+  }
+  .pour-btn[data-amount="1000"] {
+    background-color: #78350f;
+  }
+  .pour-btn[data-amount="other"] {
+    background-color: #4a2c0a;
+  }
+
+  .pour-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Reset button */
+
+  .btn-reset {
+    margin-top: 1rem;
+    background-color: var(--brown-dark);
+    color: var(--surface);
+    font-weight: 700;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  .btn-reset:hover {
+    background-color: #5c3a16;
+  }
+
+  /* Modal */
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 999;
+  }
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    padding: 1.5rem 1.8rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    width: 320px;
+    max-width: 90vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    user-select: none;
+  }
+  .modal.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal h3 {
+    margin: 0 0 1rem 0;
+    color: var(--brown-dark);
+    font-weight: 700;
+  }
+
+  .modal input {
+    width: 100%;
+    font-size: 1.2rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--amber);
+    border-radius: 6px;
+    outline-offset: 2px;
+    margin-bottom: 1rem;
+  }
+  .modal input:focus {
+    border-color: var(--brown-dark);
+  }
+
+  .modal-buttons {
+    text-align: right;
+  }
+  .modal-buttons button {
+    background-color: var(--brown-dark);
+    color: var(--surface);
+    font-weight: 700;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-left: 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.25s ease;
+  }
+  .modal-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .modal-buttons button:hover:not(:disabled) {
+    background-color: #5c3a16;
+  }
+
+  /* Warning text in modal */
+  .modal-warning {
+    color: var(--red-warm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: -0.8rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  /* Responsive */
+
+  @media (max-width: 720px) {
+    .kegs-container {
+      flex-direction: column;
+      padding-bottom: 3rem;
+    }
+    .keg-section {
+      max-width: 420px;
+      margin: 0 auto 1.5rem;
+    }
+    .pour-btn {
+      flex: 1 1 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  🍺 Dual Keg Tracker
+</header>
+<div class="summary" aria-live="polite" aria-atomic="true">
+  Total Remaining: <span id="total-remaining">46.00L</span> &nbsp;|&nbsp; Total Consumed: <span id="total-consumed">0.00L</span>
+</div>
+<div class="kegs-container">
+  <section class="keg-section" id="keg-a" aria-label="Keg A">
+    <div class="keg-header">
+      <h2>Tap A</h2>
+      <div class="keg-status ready" id="status-a">Ready</div>
+    </div>
+    <div class="keg-display">
+      <div class="remaining-display" aria-live="polite" aria-atomic="true">
+        <span class="remaining-amount" id="remaining-a">23.00</span>L remaining
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" id="progress-bar-a" style="--progress: 100%;">
+          <span class="progress-text" id="progress-text-a">100%</span>
+        </div>
+      </div>
+    </div>
+    <div class="consumed-display">
+      <span class="consumed-label">Consumed:</span>
+      <span id="consumed-a">0.00</span>L
+    </div>
+    <div class="pour-buttons">
+      <button class="pour-btn" data-keg="a" data-amount="330" aria-label="Pour 330 milliliters">330ml</button>
+      <button class="pour-btn" data-keg="a" data-amount="425" aria-label="Pour 425 milliliters">425ml</button>
+      <button class="pour-btn" data-keg="a" data-amount="500" aria-label="Pour 500 milliliters">500ml</button>
+      <button class="pour-btn" data-keg="a" data-amount="570" aria-label="Pour 570 milliliters">570ml</button>
+      <button class="pour-btn" data-keg="a" data-amount="1000" aria-label="Pour 1 liter">1L</button>
+      <button class="pour-btn" data-keg="a" data-amount="other" aria-label="Pour other amount">Other</button>
+    </div>
+    <button class="btn-reset" data-keg="a" aria-label="Reset Keg A to full">Reset Keg A</button>
+  </section>
+  <section class="keg-section" id="keg-b" aria-label="Keg B">
+    <div class="keg-header">
+      <h2>Tap B</h2>
+      <div class="keg-status ready" id="status-b">Ready</div>
+    </div>
+    <div class="keg-display">
+      <div class="remaining-display" aria-live="polite" aria-atomic="true">
+        <span class="remaining-amount" id="remaining-b">23.00</span>L remaining
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" id="progress-bar-b" style="--progress: 100%;">
+          <span class="progress-text" id="progress-text-b">100%</span>
+        </div>
+      </div>
+    </div>
+    <div class="consumed-display">
+      <span class="consumed-label">Consumed:</span>
+      <span id="consumed-b">0.00</span>L
+    </div>
+    <div class="pour-buttons">
+      <button class="pour-btn" data-keg="b" data-amount="330" aria-label="Pour 330 milliliters">330ml</button>
+      <button class="pour-btn" data-keg="b" data-amount="425" aria-label="Pour 425 milliliters">425ml</button>
+      <button class="pour-btn" data-keg="b" data-amount="500" aria-label="Pour 500 milliliters">500ml</button>
+      <button class="pour-btn" data-keg="b" data-amount="570" aria-label="Pour 570 milliliters">570ml</button>
+      <button class="pour-btn" data-keg="b" data-amount="1000" aria-label="Pour 1 liter">1L</button>
+      <button class="pour-btn" data-keg="b" data-amount="other" aria-label="Pour other amount">Other</button>
+    </div>
+    <button class="btn-reset" data-keg="b" aria-label="Reset Keg B to full">Reset Keg B</button>
+  </section>
+</div>
+<!-- Modal -->
+<div id="custom-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
+  <h3 id="modal-title">Enter Custom Pour (ml)</h3>
+  <input id="custom-amount" type="number" min="1" max="5000" placeholder="Enter ml" aria-describedby="modal-warning" />
+  <div id="modal-warning" class="modal-warning" aria-live="polite"></div>
+  <div class="modal-buttons">
+    <button id="modal-cancel">Cancel</button>
+    <button id="modal-confirm" disabled>Confirm</button>
+  </div>
+</div>
+<div class="modal-backdrop"></div>
+<script>
+class KegTracker {
+  constructor() {
+    this.kegCapacity = 23;
+    this.lowWarningThreshold = 2;
+    this.kegs = { a: { remaining: this.kegCapacity, consumed: 0 }, b: { remaining: this.kegCapacity, consumed: 0 } };
+    this.currentModalKeg = null;
+    this.init();
+  }
+  init() {
+    this.loadKegState();
+    this.bindEvents();
+    this.updateAllDisplays();
+  }
+  bindEvents() {
+    document.querySelectorAll('.pour-btn').forEach(btn => btn.addEventListener('click', e => this.handlePourClick(e)));
+    document.querySelectorAll('.btn-reset').forEach(btn => btn.addEventListener('click', e => this.handleResetClick(e)));
+    document.getElementById('modal-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('modal-confirm').addEventListener('click', () => this.confirmCustomPour());
+    document.querySelector('.modal-backdrop').addEventListener('click', () => this.closeModal());
+    const input = document.getElementById('custom-amount');
+    input.addEventListener('input', () => this.validateCustomInput());
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter' && !document.getElementById('modal-confirm').disabled) this.confirmCustomPour();
+    });
+  }
+  saveKegState() {
+    localStorage.setItem('kegA_remaining', this.kegs.a.remaining.toFixed(2));
+    localStorage.setItem('kegA_consumed', this.kegs.a.consumed.toFixed(2));
+    localStorage.setItem('kegB_remaining', this.kegs.b.remaining.toFixed(2));
+    localStorage.setItem('kegB_consumed', this.kegs.b.consumed.toFixed(2));
+  }
+  loadKegState() {
+    const aRemaining = parseFloat(localStorage.getItem('kegA_remaining'));
+    const aConsumed = parseFloat(localStorage.getItem('kegA_consumed'));
+    const bRemaining = parseFloat(localStorage.getItem('kegB_remaining'));
+    const bConsumed = parseFloat(localStorage.getItem('kegB_consumed'));
+    if (!isNaN(aRemaining)) this.kegs.a.remaining = aRemaining;
+    if (!isNaN(aConsumed)) this.kegs.a.consumed = aConsumed;
+    if (!isNaN(bRemaining)) this.kegs.b.remaining = bRemaining;
+    if (!isNaN(bConsumed)) this.kegs.b.consumed = bConsumed;
+  }
+  updateAllDisplays() {
+    this.updateKegDisplay('a');
+    this.updateKegDisplay('b');
+    this.updateSummary();
+  }
+  handlePourClick(e) {
+    const kegId = e.target.dataset.keg;
+    const amountStr = e.target.dataset.amount;
+    if (amountStr === "other") this.openModal(kegId); else this.pourBeer(kegId, parseInt(amountStr));
+  }
+  handleResetClick(e) {
+    this.resetKeg(e.target.dataset.keg);
+  }
+  pourBeer(kegId, amountMl) {
+    if (typeof amountMl !== "number" || isNaN(amountMl) || amountMl <= 0) { alert("Invalid pour amount"); return; }
+    const keg = this.kegs[kegId];
+    const amountL = amountMl / 1000;
+    if (keg.remaining < amountL) { alert(`Not enough beer! Only ${keg.remaining.toFixed(2)}L remaining.`); return; }
+    keg.remaining = +(keg.remaining - amountL).toFixed(2);
+    keg.consumed = +(keg.consumed + amountL).toFixed(2);
+    this.saveKegState();
+    this.updateKegDisplay(kegId);
+    this.updateSummary();
+    this.checkWarnings(kegId);
+  }
+  resetKeg(kegId) {
+    this.kegs[kegId].remaining = this.kegCapacity;
+    this.kegs[kegId].consumed = 0;
+    this.saveKegState();
+    this.updateKegDisplay(kegId);
+    this.updateSummary();
+    this.clearWarnings(kegId);
+  }
+  updateKegDisplay(kegId) {
+    const keg = this.kegs[kegId];
+    document.getElementById(`remaining-${kegId}`).textContent = keg.remaining.toFixed(2);
+    document.getElementById(`consumed-${kegId}`).textContent = keg.consumed.toFixed(2);
+    const percent = Math.round((keg.remaining / this.kegCapacity) * 100);
+    const progressBar = document.getElementById(`progress-bar-${kegId}`);
+    if (progressBar) progressBar.style.setProperty("--progress", percent + "%");
+    document.getElementById(`progress-text-${kegId}`).textContent = percent + "%";
+    const status = document.getElementById(`status-${kegId}`);
+    status.classList.remove("ready", "warning", "error");
+    if (keg.remaining <= 0) {
+      status.textContent = "Keg Empty";
+      status.classList.add("error");
+    } else if (keg.remaining < this.lowWarningThreshold) {
+      status.textContent = `Warning: Low (${keg.remaining.toFixed(2)}L left)`;
+      status.classList.add("warning");
+    } else {
+      status.textContent = "Ready";
+      status.classList.add("ready");
+    }
+  }
+  updateSummary() {
+    const totalRemaining = this.kegs.a.remaining + this.kegs.b.remaining;
+    const totalConsumed = this.kegs.a.consumed + this.kegs.b.consumed;
+    document.getElementById("total-remaining").textContent = totalRemaining.toFixed(2) + "L";
+    document.getElementById("total-consumed").textContent = totalConsumed.toFixed(2) + "L";
+  }
+  checkWarnings(kegId) {
+    this.updateKegDisplay(kegId);
+  }
+  clearWarnings(kegId) {
+    const status = document.getElementById(`status-${kegId}`);
+    status.textContent = "Ready";
+    status.classList.remove("warning", "error");
+    status.classList.add("ready");
+  }
+  openModal(kegId) {
+    this.currentModalKeg = kegId;
+    const modal = document.getElementById("custom-modal");
+    const backdrop = document.querySelector(".modal-backdrop");
+    modal.classList.add("open");
+    backdrop.classList.add("open");
+    const input = document.getElementById("custom-amount");
+    input.value = "";
+    input.focus();
+    document.getElementById("modal-warning").style.display = "none";
+    document.getElementById("modal-confirm").disabled = true;
+  }
+  closeModal() {
+    this.currentModalKeg = null;
+    const modal = document.getElementById("custom-modal");
+    const backdrop = document.querySelector(".modal-backdrop");
+    modal.classList.remove("open");
+    backdrop.classList.remove("open");
+  }
+  validateCustomInput() {
+    const input = document.getElementById("custom-amount");
+    const val = parseFloat(input.value);
+    const warning = document.getElementById("modal-warning");
+    if (isNaN(val) || val <= 0 || val > 5000) {
+      document.getElementById("modal-confirm").disabled = true;
+      warning.textContent = "Please enter a number between 1 and 5000 ml";
+      warning.style.display = "block";
+    } else {
+      document.getElementById("modal-confirm").disabled = false;
+      warning.style.display = "none";
+    }
+  }
+  confirmCustomPour() {
+    const input = document.getElementById("custom-amount");
+    const val = parseFloat(input.value);
+    if (isNaN(val) || val <= 0 || val > 5000) {
+      alert("Invalid pour amount");
+      return;
+    }
+    this.pourBeer(this.currentModalKeg, val);
+    this.closeModal();
+  }
+}
+document.addEventListener("DOMContentLoaded", () => { window.kegTracker = new KegTracker(); });
+</script>
+</body>
+</html>
