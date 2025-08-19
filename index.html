@@ -80,7 +80,7 @@
     user-select: none;
     white-space: nowrap;
   }
-  .keg-status.ready {
+  .keg-status.Now Pouring! {
     background-color: var(--gold);
     color: var(--brown-dark);
   }
@@ -275,7 +275,7 @@
   <section class="keg-section" id="keg-a" aria-label="Tap A">
     <div class="keg-header">
       <h2>Tap A</h2>
-      <div class="keg-status ready" id="status-a">Loading...</div>
+      <div class="keg-status Now Pouring!" id="status-a">Loading...</div>
     </div>
     <div class="keg-display">
       <div class="remaining-display" aria-live="polite" aria-atomic="true"><span class="remaining-amount" id="remaining-a">0.00</span>L remaining</div>
@@ -299,7 +299,7 @@
   <section class="keg-section" id="keg-b" aria-label="Tap B">
     <div class="keg-header">
       <h2>Tap B</h2>
-      <div class="keg-status ready" id="status-b">Loading...</div>
+      <div class="keg-status Now Pouring!" id="status-b">Loading...</div>
     </div>
     <div class="keg-display">
       <div class="remaining-display" aria-live="polite" aria-atomic="true"><span class="remaining-amount" id="remaining-b">0.00</span>L remaining</div>
@@ -386,7 +386,7 @@ class DualKegTracker {
     if (progBar) progBar.style.setProperty('--progress', percent + '%');
     document.getElementById(`progress-text-${kegId}`).textContent = percent + '%';
     const statusEl = document.getElementById(`status-${kegId}`);
-    statusEl.classList.remove('ready', 'warning', 'error');
+    statusEl.classList.remove('Now Pouring!', 'warning', 'error');
     if (tap.remaining <= 0) {
       statusEl.textContent = 'Keg Empty';
       statusEl.classList.add('error');
@@ -394,8 +394,8 @@ class DualKegTracker {
       statusEl.textContent = `Warning: Low (${tap.remaining.toFixed(2)}L left)`;
       statusEl.classList.add('warning');
     } else {
-      statusEl.textContent = 'Ready';
-      statusEl.classList.add('ready');
+      statusEl.textContent = 'Now Pouring!';
+      statusEl.classList.add('Now Pouring!');
     }
   }
   updateSummary() {
