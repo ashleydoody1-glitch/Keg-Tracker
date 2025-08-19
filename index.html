@@ -573,7 +573,7 @@
       const { data, error } = await supabase.from('pour_history')
         .select('*')
         .order('poured_at', { ascending: false })
-        .limit(50);
+        .limit(25);
       if (error) {
         console.error('Error loading pour history:', error);
         document.getElementById('pour-history').textContent = 'Error loading history.';
