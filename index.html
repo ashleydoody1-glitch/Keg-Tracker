@@ -379,7 +379,7 @@
     }
     bindEvents() {
       document.querySelectorAll('.pour-btn').forEach(btn => btn.addEventListener('click', e => this.handlePourClick(e)));
-      document.querySelectorAll('.btn-reset').forEach(btn => btn.addEventListener('click', e => this.handleResetClick(e)));
+     document.querySelectorAll('.btn-reset').forEach(btn => btn.addEventListener('click', e => this.handleResetClick(e)));
       document.getElementById('modal-cancel').addEventListener('click', () => this.closeModal());
       document.getElementById('modal-confirm').addEventListener('click', () => this.confirmCustomPour());
       document.querySelector('.modal-backdrop').addEventListener('click', () => this.closeModal());
