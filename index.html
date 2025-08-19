@@ -452,79 +452,56 @@
       if (!tap) return alert(`No data found for ${tapName}`);
       await this.resetTap(tap.id);
     }
-    async pourTap(tapId, amountMl) {
-      if (typeof amountMl !== 'number' || isNaN(amountMl) || amountMl <= 0) {
-        alert('Invalid pour amount');
-        return;
-      }
-      const tap = this.taps[tapId];
-      const amountL = amountMl / 1000;
-      if (tap.remaining < amountL) {
-        alert(`Not enough beer! Only ${tap.remaining.toFixed(2)}L remaining.`);
-        return;
-      }
-      // Optimistic UI update
-      const newRemaining = +(tap.remaining - amountL).toFixed(2);
-      const newConsumed = +(tap.consumed + amountL).toFixed(2);
-      this.taps[tapId].remaining = newRemaining;
-      this.taps[tapId].consumed = newConsumed;
-      this.renderTap(this.taps[tapId]);
-      this.updateSummary();
+   async pourTap(tapId, amountMl) {
+  if (typeof amountMl !== 'number' || isNaN(amountMl) || amountMl <= 0) {
+    alert('Invalid pour amount');
+    return;
+  }
+  const tap = this.taps[tapId];
+  const amountL = amountMl / 1000;
+  if (tap.remaining < amountL) {
+    alert(`Not enough beer! Only ${tap.remaining.toFixed(2)}L remaining.`);
+    return;
+  }
+  // Optimistic UI update
+  const newRemaining = +(tap.remaining - amountL).toFixed(2);
+  const newConsumed = +(tap.consumed + amountL).toFixed(2);
+  this.taps[tapId].remaining = newRemaining;
+  this.taps[tapId].consumed = newConsumed;
+  this.renderTap(this.taps[tapId]);
+  this.updateSummary();
 
-      const { error: tapError } = await supabase.from('taps').update({ remaining: newRemaining, consumed: newConsumed }).eq('id', tapId);
-      if (tapError) {
-        alert('Error updating tap: ' + tapError.message);
-        await this.loadTaps();
-        return;
-      }
+  // Update taps table in database
+  const { error: tapError } = await supabase.from('taps').update({ remaining: newRemaining, consumed: newConsumed }).eq('id', tapId);
+  if (tapError) {
+    alert('Error updating tap: ' + tapError.message);
+    await this.loadTaps();
+    return;
+  }
 
-      const { error: historyError } = await supabase.from('pour_history').insert([{
-        tap_id: tapId,
-        tap_name: tap.tap_name,
-        amount_ml: amountMl
-      }]);
-      if (historyError) {
-        console.error('Error logging pour history:', historyError);
-      }
+  // Log pour in history table
+  const { error: historyError } = await supabase.from('pour_history').insert([{
+    tap_id: tapId,
+    tap_name: tap.tap_name,
+    amount_ml: amountMl
+  }]);
+  if (historyError) {
+    console.error('Error logging pour history:', historyError);
+  }
 
-      // Log 'Keg Empty' note if depleted
-      if (newRemaining <= 0) {
-        const { error: emptyError } = await supabase.from('pour_history').insert([{
-          tap_id: tapId,
-          tap_name: tap.tap_name,
-          amount_ml: 0,
-          note: 'Keg Empty'
-        }]);
-        if (emptyError) console.error('Error logging keg empty:', emptyError);
-      }
+  // Insert "Keg Empty" history entry if keg is empty
+  if (newRemaining <= 0) {
+    const { error: emptyError } = await supabase.from('pour_history').insert([{
+      tap_id: tapId,
+      tap_name: tap.tap_name,
+      amount_ml: 0,
+      note: 'Keg Empty'
+    }]);
+    if (emptyError) console.error('Error logging keg empty:', emptyError);
+  }
 
-      await this.loadPourHistory(); // Refresh history after new pour
-    }
-    async resetTap(tapId) {
-      // Optimistic UI update
-      this.taps[tapId].remaining = this.kegCapacity;
-      this.taps[tapId].consumed = 0;
-      this.renderTap(this.taps[tapId]);
-      this.updateSummary();
-
-      const { error: resetError } = await supabase.from('taps').update({ remaining: this.kegCapacity, consumed: 0 }).eq('id', tapId);
-      if (resetError) {
-        alert('Error resetting tap: ' + resetError.message);
-        await this.loadTaps();
-        return;
-      }
-
-      // Log tap reset note
-      const { error: resetHistoryError } = await supabase.from('pour_history').insert([{
-        tap_id: tapId,
-        tap_name: this.taps[tapId].tap_name,
-        amount_ml: 0,
-        note: 'Tap Reset'
-      }]);
-      if (resetHistoryError) console.error('Error logging tap reset:', resetHistoryError);
-
-      await this.loadPourHistory(); // Refresh history after reset
-    }
+  await this.loadPourHistory(); // Refresh history display
+}
     openModal(tapId) {
       this.currentModalTapId = tapId;
       const modal = document.getElementById('custom-modal');
@@ -573,7 +550,7 @@
       const { data, error } = await supabase.from('pour_history')
         .select('*')
         .order('poured_at', { ascending: false })
-        .limit(50);
+        .limit(20);
       if (error) {
         console.error('Error loading pour history:', error);
         document.getElementById('pour-history').textContent = 'Error loading history.';
