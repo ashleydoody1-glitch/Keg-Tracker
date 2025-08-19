@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dual Keg Tracker with Pour History</title>
+<title>Dual Keg Tracker with History and Notes</title>
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
 <style>
+  /* (Keep existing CSS unchanged from previous code) */
   :root {
     --amber: #f4a261;
     --gold: #e9c46a;
@@ -270,6 +271,11 @@
     padding: 0.5rem 0;
     border-bottom: 1px solid var(--brown-light);
   }
+  .history-note {
+    font-style: italic;
+    color: var(--brown-dark);
+    margin-left: 5px;
+  }
   @media (max-width: 720px) {
     .kegs-container { flex-direction: column; padding-bottom: 3rem; }
     .keg-section { max-width: 420px; margin: 0 auto 1.5rem; }
@@ -278,10 +284,11 @@
 </style>
 </head>
 <body>
-<header>🍺 Dual Keg Tracker with History</header>
+<header>🍺 Dual Keg Tracker with History and Notes</header>
 <div class="summary" aria-live="polite" aria-atomic="true">
   Total Remaining: <span id="total-remaining">0.00L</span> &nbsp;|&nbsp; Total Consumed: <span id="total-consumed">0.00L</span>
 </div>
+
 <div class="kegs-container">
   <section class="keg-section" id="keg-a" aria-label="Tap A">
     <div class="keg-header">
@@ -333,7 +340,6 @@
   </section>
 </div>
 
-<!-- Pour History Section -->
 <div class="history-section" aria-live="polite" aria-atomic="true">
   <h3>Recent Pour History</h3>
   <div id="pour-history">Loading history...</div>
@@ -353,8 +359,8 @@
 <div class="modal-backdrop"></div>
 
 <script>
-  const SUPABASE_URL = "https://damprmcwxluzsscwtkpv.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbXBybWN3eGx1enNzY3d0a3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NzE5NjMsImV4cCI6MjA3MTE0Nzk2M30.yZYdIOV0aCsca8-mv0yro3PCI_wnxCKrdzE-p5ckVQo";
+  const SUPABASE_URL = "https://your-project.supabase.co";
+  const SUPABASE_KEY = "your-anon-public-key";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   class DualKegTracker {
@@ -446,65 +452,54 @@
       if (!tap) return alert(`No data found for ${tapName}`);
       await this.resetTap(tap.id);
     }
-   async pourTap(tapId, amountMl) {
-  if (typeof amountMl !== 'number' || isNaN(amountMl) || amountMl <= 0) {
-    alert('Invalid pour amount');
-    return;
-  }
-  const tap = this.taps[tapId];
-  const amountL = amountMl / 1000;
-  if (tap.remaining < amountL) {
-    alert(`Not enough beer! Only ${tap.remaining.toFixed(2)}L remaining.`);
-    return;
-  }
-  // Optimistic UI update
-  const newRemaining = +(tap.remaining - amountL).toFixed(2);
-  const newConsumed = +(tap.consumed + amountL).toFixed(2);
-  this.taps[tapId].remaining = newRemaining;
-  this.taps[tapId].consumed = newConsumed;
-  this.renderTap(this.taps[tapId]);
-  this.updateSummary();
-
-  const { error: tapError } = await supabase.from('taps').update({ remaining: newRemaining, consumed: newConsumed }).eq('id', tapId);
-  if (tapError) {
-    alert('Error updating tap: ' + tapError.message);
-    await this.loadTaps();
-    return;
-  }
-
-  const { error: historyError } = await supabase.from('pour_history').insert([{
-    tap_id: tapId,
-    tap_name: tap.tap_name,
-    amount_ml: amountMl
-  }]);
-  if (historyError) {
-    console.error('Error logging pour history:', historyError);
-  } else {
-    // Cleanup old entries if count > 50
-    const { data: allEntries, error: countError } = await supabase
-      .from('pour_history')
-      .select('id', { count: 'exact' })
-      .order('poured_at', { ascending: false });
-
-    if (countError) {
-      console.error('Error counting pour history:', countError);
-    } else if (allEntries.length > 50) {
-      // IDs to delete (oldest beyond 50)
-      const idsToDelete = allEntries.slice(50).map(entry => entry.id);
-      if (idsToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('pour_history')
-          .delete()
-          .in('id', idsToDelete);
-        if (deleteError) {
-          console.error('Error deleting old pour history:', deleteError);
-        }
+    async pourTap(tapId, amountMl) {
+      if (typeof amountMl !== 'number' || isNaN(amountMl) || amountMl <= 0) {
+        alert('Invalid pour amount');
+        return;
       }
+      const tap = this.taps[tapId];
+      const amountL = amountMl / 1000;
+      if (tap.remaining < amountL) {
+        alert(`Not enough beer! Only ${tap.remaining.toFixed(2)}L remaining.`);
+        return;
+      }
+      // Optimistic UI update
+      const newRemaining = +(tap.remaining - amountL).toFixed(2);
+      const newConsumed = +(tap.consumed + amountL).toFixed(2);
+      this.taps[tapId].remaining = newRemaining;
+      this.taps[tapId].consumed = newConsumed;
+      this.renderTap(this.taps[tapId]);
+      this.updateSummary();
+
+      const { error: tapError } = await supabase.from('taps').update({ remaining: newRemaining, consumed: newConsumed }).eq('id', tapId);
+      if (tapError) {
+        alert('Error updating tap: ' + tapError.message);
+        await this.loadTaps();
+        return;
+      }
+
+      const { error: historyError } = await supabase.from('pour_history').insert([{
+        tap_id: tapId,
+        tap_name: tap.tap_name,
+        amount_ml: amountMl
+      }]);
+      if (historyError) {
+        console.error('Error logging pour history:', historyError);
+      }
+
+      // Log 'Keg Empty' note if depleted
+      if (newRemaining <= 0) {
+        const { error: emptyError } = await supabase.from('pour_history').insert([{
+          tap_id: tapId,
+          tap_name: tap.tap_name,
+          amount_ml: 0,
+          note: 'Keg Empty'
+        }]);
+        if (emptyError) console.error('Error logging keg empty:', emptyError);
+      }
+
+      await this.loadPourHistory(); // Refresh history after new pour
     }
-  }
-  
-  await this.loadPourHistory(); // Refresh history after new pour
-}
     async resetTap(tapId) {
       // Optimistic UI update
       this.taps[tapId].remaining = this.kegCapacity;
@@ -518,6 +513,16 @@
         await this.loadTaps();
         return;
       }
+
+      // Log tap reset note
+      const { error: resetHistoryError } = await supabase.from('pour_history').insert([{
+        tap_id: tapId,
+        tap_name: this.taps[tapId].tap_name,
+        amount_ml: 0,
+        note: 'Tap Reset'
+      }]);
+      if (resetHistoryError) console.error('Error logging tap reset:', resetHistoryError);
+
       await this.loadPourHistory(); // Refresh history after reset
     }
     openModal(tapId) {
@@ -568,7 +573,7 @@
       const { data, error } = await supabase.from('pour_history')
         .select('*')
         .order('poured_at', { ascending: false })
-        .limit(10);
+        .limit(50);
       if (error) {
         console.error('Error loading pour history:', error);
         document.getElementById('pour-history').textContent = 'Error loading history.';
@@ -576,20 +581,30 @@
       }
       this.displayPourHistory(data);
     }
-    displayPourHistory(history) {
-      const container = document.getElementById('pour-history');
-      if (!container) return;
-      if (history.length === 0) {
-        container.textContent = 'No pour history yet.';
-        return;
-      }
-      container.innerHTML = history.map(pour => `
-        <div>
-          <strong>${pour.tap_name}</strong>: ${pour.amount_ml}ml 
-          <small>${new Date(pour.poured_at).toLocaleString()}</small>
-        </div>
-      `).join('');
-    }
+  displayPourHistory(history) {
+  const container = document.getElementById('pour-history');
+  if (!container) return;
+  if (history.length === 0) {
+    container.textContent = 'No pour history yet.';
+    return;
+  }
+  // Date formatter function
+  function formatDateDDMMYYYY(dateStr) {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  
+  container.innerHTML = history.map(pour => `
+    <div>
+      <strong>${pour.tap_name}</strong>: ${pour.amount_ml > 0 ? pour.amount_ml + 'ml' : ''}
+      ${pour.note ? `<span class="history-note">- ${pour.note}</span>` : ''}
+      <small>${formatDateDDMMYYYY(pour.poured_at)}</small>
+    </div>
+  `).join('');
+}
     setupRealtimeSubscription() {
       supabase
         .from('taps')
@@ -602,13 +617,13 @@
         .subscribe();
     }
   }
-
   document.addEventListener('DOMContentLoaded', () => {
     window.dualKegTracker = new DualKegTracker();
   });
 </script>
 </body>
 </html>
+
 
 </html>
 
