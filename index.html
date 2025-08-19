@@ -276,9 +276,9 @@
 </div>
 
 <div class="kegs-container">
-  <section class="keg-section" id="keg-a" aria-label="Tab A">
+  <section class="keg-section" id="keg-a" aria-label="Tap A">
     <div class="keg-header">
-      <h2>Tab A</h2>
+      <h2>Tap A</h2>
       <div class="keg-status ready" id="status-a">Loading...</div>
     </div>
     <div class="keg-display">
@@ -298,12 +298,12 @@
       <button class="pour-btn" data-keg="a" data-amount="1000" aria-label="Pour 1 liter">1L</button>
       <button class="pour-btn" data-keg="a" data-amount="other" aria-label="Pour other amount">Other</button>
     </div>
-    <button class="btn-reset" data-keg="a" aria-label="Reset Tab A to full">Reset Tab A</button>
+    <button class="btn-reset" data-keg="a" aria-label="Reset Tap A to full">Reset Tap A</button>
   </section>
 
-  <section class="keg-section" id="keg-b" aria-label="Tab B">
+  <section class="keg-section" id="keg-b" aria-label="Tap B">
     <div class="keg-header">
-      <h2>Tab B</h2>
+      <h2>Tap B</h2>
       <div class="keg-status ready" id="status-b">Loading...</div>
     </div>
     <div class="keg-display">
@@ -323,7 +323,7 @@
       <button class="pour-btn" data-keg="b" data-amount="1000" aria-label="Pour 1 liter">1L</button>
       <button class="pour-btn" data-keg="b" data-amount="other" aria-label="Pour other amount">Other</button>
     </div>
-    <button class="btn-reset" data-keg="b" aria-label="Reset Tab B to full">Reset Tab B</button>
+    <button class="btn-reset" data-keg="b" aria-label="Reset Tap B to full">Reset Tap B</button>
   </section>
 </div>
 
@@ -389,9 +389,9 @@
     renderTap(tap) {
       // Find the right section by tap_name
       let kegId = null;
-      if (tap.tap_name.toLowerCase() === 'Tab A') kegId = 'a';
-      else if (tap.tap_name.toLowerCase() === 'Tab B') kegId = 'b';
-      else return; // only supports Tab A and b here
+      if (tap.tap_name.toLowerCase() === 'Tap A') kegId = 'a';
+      else if (tap.tap_name.toLowerCase() === 'Tap B') kegId = 'b';
+      else return; // only supports Tap A and b here
 
       document.getElementById(`remaining-${kegId}`).textContent = tap.remaining.toFixed(2);
       document.getElementById(`consumed-${kegId}`).textContent = tap.consumed.toFixed(2);
@@ -423,7 +423,7 @@
     async handlePourClick(e) {
       const kegId = e.target.dataset.keg;
       const amountStr = e.target.dataset.amount;
-      let tapName = kegId === 'a' ? 'Tab A' : 'Tab B';
+      let tapName = kegId === 'a' ? 'Tap A' : 'Tap B';
       const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName.toLowerCase());
       if (!tap) return alert(`No data found for ${tapName}`);
 
@@ -436,7 +436,7 @@
     }
     async handleResetClick(e) {
       const kegId = e.target.dataset.keg;
-      const tapName = kegId === 'a' ? 'Tab A' : 'Tab B';
+      const tapName = kegId === 'a' ? 'Tap A' : 'Tap B';
       const tap = Object.values(this.taps).find(t => t.tap_name.toLowerCase() === tapName.toLowerCase());
       if (!tap) return alert(`No data found for ${tapName}`);
       await this.resetTap(tap.id);
