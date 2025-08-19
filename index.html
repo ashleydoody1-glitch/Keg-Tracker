@@ -376,22 +376,22 @@
       await this.loadTaps();
       await this.loadPourHistory();
       this.setupRealtimeSubscription();
-    }
-    bindEvents() {
-      document.querySelectorAll('.pour-btn').forEach(btn => btn.addEventListener('click', e => this.handlePourClick(e)));
-      bindEvents() {
+  bindEvents() {
+  document.querySelectorAll('.pour-btn').forEach(btn => 
+    btn.addEventListener('click', e => this.handlePourClick(e))
+  );
   document.querySelectorAll('.btn-reset').forEach(btn => 
     btn.addEventListener('click', e => this.handleResetClick(e))
   );
-      document.getElementById('modal-cancel').addEventListener('click', () => this.closeModal());
-      document.getElementById('modal-confirm').addEventListener('click', () => this.confirmCustomPour());
-      document.querySelector('.modal-backdrop').addEventListener('click', () => this.closeModal());
-      const input = document.getElementById('custom-amount');
-      input.addEventListener('input', () => this.validateCustomInput());
-      input.addEventListener('keypress', e => {
-        if (e.key === 'Enter' && !document.getElementById('modal-confirm').disabled) this.confirmCustomPour();
-      });
-    }
+  document.getElementById('modal-cancel').addEventListener('click', () => this.closeModal());
+  document.getElementById('modal-confirm').addEventListener('click', () => this.confirmCustomPour());
+  document.querySelector('.modal-backdrop').addEventListener('click', () => this.closeModal());
+  const input = document.getElementById('custom-amount');
+  input.addEventListener('input', () => this.validateCustomInput());
+  input.addEventListener('keypress', e => {
+    if (e.key === 'Enter' && !document.getElementById('modal-confirm').disabled) this.confirmCustomPour();
+  });
+}
     async loadTaps() {
       const { data, error } = await supabase.from('taps').select('*');
       if (error) {
