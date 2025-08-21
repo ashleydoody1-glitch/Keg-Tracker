@@ -608,13 +608,18 @@
   const secs = String(date.getSeconds()).padStart(2, '0');
   return `${day} ${month} ${year} ${hours}:${mins}:${secs}`;
 }
-      container.innerHTML = history.map(pour => `
-        <div>
-          <strong>${pour.tap_name}</strong>: ${pour.amount_ml > 0 ? pour.amount_ml + 'ml' : ''}
-          ${pour.note ? `<span class="history-note">- ${pour.note}</span>` : ''}
-         <small>${formatDateTimeWithMonthWord(pour.poured_at)}</small>
-        </div>
-      `).join('');
+      container.innerHTML = history.map(pour => {
+  // Get the beer name for this tap (if set)
+  const beerName = this.taps[pour.tap_id]?.beer_name || '';
+  return `
+    <div>
+      <strong>${pour.tap_name}${beerName ? ' - ' + beerName : ''}</strong>: 
+      ${pour.amount_ml > 0 ? pour.amount_ml + 'ml' : ''}
+      ${pour.note ? `<span class="history-note">- ${pour.note}</span>` : ''}
+      <small>${formatDateTimeWithMonthWord(pour.poured_at)}</small>
+    </div>
+  `;
+}).join('');
     }
     setupRealtimeSubscription() {
       supabase
