@@ -605,7 +605,7 @@
         <div>
           <strong>${pour.tap_name}</strong>: ${pour.amount_ml > 0 ? pour.amount_ml + 'ml' : ''}
           ${pour.note ? `<span class="history-note">- ${pour.note}</span>` : ''}
-          <small>${formatDateDDMMYYYY(pour.poured_at)}</small>
+          <small>${formatDateTime(pour.poured_at)}</small>
         </div>
       `).join('');
     }
