@@ -377,7 +377,8 @@
 <script>
   const SUPABASE_URL = "https://damprmcwxluzsscwtkpv.supabase.co";
   const SUPABASE_KEY = "sb_publishable_7gfnQ_G4FmvWAeLQ4OZM0Q_9lpb71wq";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabase = supabase.createClient(SUPABASEURL, SUPABASEKEY)
+
   
   class DualKegTracker {
     constructor() {
